@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DeltaWebMap.ServerContentBucketServer": {
+      "commandName": "Project",
+      "commandLineArgs": "23223 4090945809140794489"
+    }
+  }
+}
