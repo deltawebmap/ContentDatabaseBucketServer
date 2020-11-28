@@ -58,7 +58,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates
                 throw new DeltaWebException("Bucket was not found.", 400);
 
             //Make sure directory exists
-            string dir = Program.unitConfig.content_root_path + conn.serverId + "\\" + server.id + "\\";
+            string dir = Program.unitConfig.content_root_path + conn.serverId + Path.DirectorySeparatorChar + server.id + Path.DirectorySeparatorChar;
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 

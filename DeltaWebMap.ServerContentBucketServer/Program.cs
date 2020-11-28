@@ -22,7 +22,7 @@ namespace DeltaWebMap.ServerContentBucketServer
         public static ContentUnitConfig unitConfig;
 
         public const int APP_VERISON_MAJOR = 0;
-        public const int APP_VERISON_MINOR = 2;
+        public const int APP_VERISON_MINOR = 3;
 
         static void Main(string[] args)
         {
@@ -48,7 +48,7 @@ namespace DeltaWebMap.ServerContentBucketServer
             connection.Log("INIT", $"Unit config defined this server as having hostname {unitConfig.hostname}. Ready to go!", DeltaLogLevel.Medium);
 
             //Make sure directory exists
-            string dir = unitConfig.content_root_path + connection.serverId + "\\";
+            string dir = unitConfig.content_root_path + connection.serverId + Path.DirectorySeparatorChar;
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
