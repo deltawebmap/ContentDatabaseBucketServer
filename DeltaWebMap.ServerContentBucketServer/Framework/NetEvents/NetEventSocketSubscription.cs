@@ -11,8 +11,6 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
     /// </summary>
     public class NetEventSocketSubscription
     {
-        public UserEventWebsocket sock;
-        public ObjectId serverId;
         public bool isSuperuser;
         public int teamId;
     }

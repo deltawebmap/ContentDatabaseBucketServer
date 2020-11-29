@@ -27,18 +27,21 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.Put
                 workingCommit.AddObject(ConvertToCommitObject(o));
 
             //Dispatch net events
-            var recipients = Program.netEventManager.GetRecipientsByServer(server._id);
-            foreach(var o in payload.items)
+            var serverRecipients = Program.netEventManager.GetRecipientsByServer(server._id);
+            if(serverRecipients.HasRecipients())
             {
-                //Get team ID
-                int teamId = GetTeamId(o);
-                
-                //Check
-                bool shouldSend = recipients.HasRecipients(x => x.isSuperuser || x.teamId == teamId);
+                foreach (var o in payload.items)
+                {
+                    //Get team ID
+                    int teamId = GetTeamId(o);
 
-                //Send
-                if (shouldSend)
-                    await recipients.SendContentChunkEvent(workingCommit.id, workingCommit.commitType, GetRpcNetType(o), x => x.isSuperuser || x.teamId == teamId);
+                    //Check
+                    var tribeRecipients = serverRecipients.GetRecipientsByServerTribe(server._id, teamId);
+
+                    //Send
+                    if (tribeRecipients.HasRecipients())
+                        tribeRecipients.SendCommitPutEvent(server._id, workingCommit.id, workingCommit.commitType, GetRpcNetType(o));
+                }
             }
 
             //Success

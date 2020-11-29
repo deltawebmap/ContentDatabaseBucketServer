@@ -3,9 +3,13 @@ using LibDeltaSystem;
 using LibDeltaSystem.Db.System;
 using LibDeltaSystem.WebFramework;
 using LibDeltaSystem.WebFramework.WebSockets;
+using LibDeltaSystem.WebFramework.WebSockets.OpcodeSock;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
@@ -26,88 +30,80 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User
         }
     }
 
-    public class UserEventWebsocket : DeltaWebSocketService
+    public class UserEventWebsocket : DeltaOpcodeUserWebSocketService
     {
         public UserEventWebsocket(DeltaConnection conn, HttpContext e) : base(conn, e)
         {
             manager = Program.netEventManager;
-            subscriptions = new List<NetEventSocketSubscription>();
+            subscriptions = new ConcurrentDictionary<ObjectId, NetEventSocketSubscription>();
+            RegisterCommandHandler("REGISTER_GUILD", OnRegisterServerRequest);
         }
-
-        public bool authenticated;
-        public DbUser user;
 
         public NetEventSocketManager manager;
-        public List<NetEventSocketSubscription> subscriptions;
+        public ConcurrentDictionary<ObjectId, NetEventSocketSubscription> subscriptions; //Key is a guild ID
 
-        public override async Task OnReceiveBinary(byte[] data, int length)
+        public bool IsPrivilegedServer(ObjectId serverId)
         {
-            
+            return subscriptions.ContainsKey(serverId);
         }
 
-        public override async Task OnReceiveText(string data)
+        public bool IsPrivilegedServerTribe(ObjectId serverId, int tribeId)
         {
-            //Decode
-            RequestData cmd = JsonConvert.DeserializeObject<RequestData>(data);
-            switch(cmd.opcode)
+            //Check if we have this server registered
+            if (!subscriptions.TryGetValue(serverId, out NetEventSocketSubscription sub))
+                return false;
+
+            return sub.isSuperuser || sub.teamId == tribeId;
+        }
+
+        public bool TryQueuePrivilegedServerTribeCommand(ObjectId serverId, int tribeId, ISockCommand cmd)
+        {
+            if(IsPrivilegedServerTribe(serverId, tribeId))
             {
-                case "CMD_LOGIN": await OnLoginRequest(cmd.value); break;
-                case "CMD_REGISTER_SERVER": await OnRegisterServerRequest(cmd.value); break;
-                default: await DisconnectAsync(NetEventSocketError.INVALID_COMMAND); break;
+                EnqueueMessage(cmd);
+                return true;
             }
+            return false;
         }
 
-        public override async Task OnSockClosed(WebSocket sock)
+        public override async Task OnSockOpened()
+        {
+            lock (manager.clients)
+                manager.clients.Add(this);
+        }
+
+        public override async Task OnSockClosed()
+        {
+            lock (manager.clients)
+                manager.clients.Remove(this);
+        }
+
+        public override async Task OnUserLoginSuccess()
         {
             
         }
 
-        public override async Task OnSockOpened(WebSocket sock)
-        {
-            
-        }
-
-        private async Task DisconnectAsync(NetEventSocketError error)
-        {
-            await DisconnectAsync(WebSocketCloseStatus.InternalServerError, "ERR" + ((int)error).ToString().PadLeft(3, '0') + ": " + error.ToString());
-        }
-
-        private async Task OnLoginRequest(string token)
-        {
-            //Log in user
-            user = await conn.AuthenticateUserToken(token);
-            authenticated = user != null;
-            if (!authenticated)
-                await DisconnectAsync(NetEventSocketError.LOGIN_FAILED);
-        }
-
-        private async Task OnRegisterServerRequest(string id)
+        private async Task OnRegisterServerRequest(JObject cmd)
         {
             //Make sure we're logged in
-            if (!authenticated)
+            if (user == null)
             {
-                await DisconnectAsync(NetEventSocketError.LOGIN_REQUIRED);
+                await SendRegisterStatus(false, "User has not logged in yet.");
+                return;
+            }
+
+            //Validate message
+            if(!UtilValidateJObject(cmd, out string validateError, new JObjectValidationParameter("guild_id", JTokenType.String)))
+            {
+                await SendRegisterStatus(false, validateError);
                 return;
             }
 
             //Get the server by the ID
-            DbServer server = await conn.GetServerByIdAsync(id);
+            DbServer server = await conn.GetServerByIdAsync((string)cmd["guild_id"]);
             if (server == null)
             {
-                await DisconnectAsync(NetEventSocketError.SERVER_NOT_FOUND);
-                return;
-            }
-
-            //Check if we already have a subscription to this
-            bool exists = false;
-            lock (subscriptions)
-            {
-                foreach (var s in subscriptions)
-                    exists = exists || s.serverId == server._id;
-            }
-            if(exists)
-            {
-                await DisconnectAsync(NetEventSocketError.SERVER_ALREADY_REGISTERED);
+                await SendRegisterStatus(false, "Guild ID not found.");
                 return;
             }
 
@@ -118,28 +114,35 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User
             //Make sure authentication was OK
             if(!isAdmin && profile == null)
             {
-                await DisconnectAsync(NetEventSocketError.SERVER_NOT_PERMITTED);
+                await SendRegisterStatus(false, "Guild access not permitted to this user.");
                 return;
             }
 
-            //Add subscription
+            //Create subscription
             NetEventSocketSubscription subscription = new NetEventSocketSubscription
             {
-                serverId = server._id,
                 isSuperuser = isAdmin,
-                sock = this,
                 teamId = profile != null ? profile.tribe_id : 0
             };
-            lock (subscriptions)
-                subscriptions.Add(subscription);
-            lock (manager.subscriptions)
-                manager.subscriptions.Add(subscription);
+
+            //Add or update
+            subscriptions.AddOrUpdate(server._id, subscription, (ObjectId _id, NetEventSocketSubscription _old) => {
+                return subscription;
+            });
+
+            //Write response
+            if(isAdmin)
+                await SendRegisterStatus(true, $"Registered as superuser.");
+            else
+                await SendRegisterStatus(true, $"Registered as tribe ID {profile.tribe_id}.");
         }
 
-        class RequestData
+        private async Task SendRegisterStatus(bool success, string message)
         {
-            public string opcode;
-            public string value;
+            JObject msg = new JObject();
+            msg["success"] = success;
+            msg["message"] = message;
+            await SendMessage("GUILD_REGISTER_STATUS", msg);
         }
     }
 }

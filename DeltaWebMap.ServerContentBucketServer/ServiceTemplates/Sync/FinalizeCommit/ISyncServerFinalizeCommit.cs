@@ -32,6 +32,11 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.FinalizeCo
             //Push
             await workingCommit.Finalize(bucket);
 
+            //Dispatch net events
+            var serverRecipients = Program.netEventManager.GetRecipientsByServer(server._id);
+            if (serverRecipients.HasRecipients())
+                serverRecipients.SendCommitFinalizedEvent(server._id, workingCommit.id, workingCommit.commitType);
+
             //Success
             await WriteString("OK", "text/plain", 200);
         }

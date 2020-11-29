@@ -6,6 +6,8 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
 {
     public enum NetEventOpcode
     {
-        CONTENT_CHUNK
+        COMMIT_PUT_CONTENT,
+        COMMIT_FINALIZE,
+        COMMIT_CREATE
     }
 }

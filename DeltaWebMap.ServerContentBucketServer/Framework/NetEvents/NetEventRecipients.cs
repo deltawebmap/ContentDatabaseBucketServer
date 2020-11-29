@@ -1,5 +1,7 @@
-﻿using MongoDB.Bson;
+﻿using DeltaWebMap.ServerContentBucketServer.Services.User;
+using MongoDB.Bson;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -10,38 +12,53 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
 {
     public class NetEventRecipients
     {
-        public NetEventRecipients(List<NetEventSocketSubscription> subscriptions, ObjectId targetServerId)
+        public NetEventRecipients(List<UserEventWebsocket> clients)
         {
-            this.subscriptions = subscriptions;
-            this.targetServerId = targetServerId;
+            this.clients = clients;
         }
 
-        private List<NetEventSocketSubscription> subscriptions;
-        private ObjectId targetServerId;
+        public List<UserEventWebsocket> clients;
 
-        private async Task DispatchEventAsync(NetEventOpcode opcode, object payload, Expression<Func<NetEventSocketSubscription, bool>> expression)
+        public void DispatchEventToAll(NetEventOpcode opcode, object payload)
         {
-            //Compile
-            var compiled = expression.Compile();
-            
-            //Create
-            string msg = JsonConvert.SerializeObject(new OutgoingMessage
-            {
-                opcode = opcode.ToString(),
-                payload = payload,
-                target_server_id = targetServerId.ToString()
-            });
-
             //Send
-            foreach(var s in subscriptions)
+            lock(clients)
             {
-                try
-                {
-                    if(compiled(s))
-                        await s.sock.SendData(msg);
-                }
-                catch { }
+                foreach (var c in clients)
+                    c.QueueSendMessage(opcode.ToString(), new JObject(payload));
             }
+        }
+
+        public NetEventRecipients GetRecipientsByServerTribe(ObjectId serverId, int tribeId)
+        {
+            List<UserEventWebsocket> found = new List<UserEventWebsocket>();
+            lock (clients)
+            {
+                foreach (var s in clients)
+                {
+                    if (s.IsPrivilegedServerTribe(serverId, tribeId))
+                    {
+                        found.Add(s);
+                    }
+                }
+            }
+            return new NetEventRecipients(found);
+        }
+
+        public NetEventRecipients GetRecipientsByServer(ObjectId serverId)
+        {
+            List<UserEventWebsocket> found = new List<UserEventWebsocket>();
+            lock (clients)
+            {
+                foreach (var s in clients)
+                {
+                    if (s.IsPrivilegedServer(serverId))
+                    {
+                        found.Add(s);
+                    }
+                }
+            }
+            return new NetEventRecipients(found);
         }
 
         private static NetCommitId GetNetCommitId(ulong id)
@@ -56,38 +73,52 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
 
         public bool HasRecipients()
         {
-            return subscriptions.Count > 0;
+            return clients.Count > 0;
         }
 
-        public bool HasRecipients(Expression<Func<NetEventSocketSubscription, bool>> expression)
+        public void SendCommitPutEvent(ObjectId serverId, ulong commitId, byte commitType, object entity)
         {
-            //Basic check
-            if (subscriptions.Count < 0)
-                return false;
-
-            //Compile and check
-            var compiled = expression.Compile();
-            foreach(var s in subscriptions)
-            {
-                if (compiled(s))
-                    return true;
-            }
-            return false;
-        }
-
-        public async Task SendContentChunkEvent(ulong commitId, byte commitType, object entity, Expression<Func<NetEventSocketSubscription, bool>> expression)
-        {
-            await DispatchEventAsync(NetEventOpcode.CONTENT_CHUNK, new PayloadSendContent
+            DispatchEventToAll(NetEventOpcode.COMMIT_PUT_CONTENT, new EventContentCommitPutContent
             {
                 commit_id = GetNetCommitId(commitId),
                 commit_type = commitType,
-                entity = entity
-            }, expression);
+                entity = entity,
+                server_id = serverId.ToString()
+            });
         }
 
-        class PayloadSendContent
+        public void SendCommitFinalizedEvent(ObjectId serverId, ulong commitId, byte commitType)
+        {
+            DispatchEventToAll(NetEventOpcode.COMMIT_FINALIZE, new EventContentCommitFinalize
+            {
+                commit_id = GetNetCommitId(commitId),
+                commit_type = commitType,
+                server_id = serverId.ToString()
+            });
+        }
+
+        public void SendCommitCreatedEvent(ObjectId serverId, ulong commitId, byte commitType)
+        {
+            DispatchEventToAll(NetEventOpcode.COMMIT_CREATE, new EventContentCommitFinalize
+            {
+                commit_id = GetNetCommitId(commitId),
+                commit_type = commitType,
+                server_id = serverId.ToString()
+            });
+        }
+
+        class EventContentCommitPutContent
         {
             public NetCommitId commit_id;
+            public string server_id;
+            public byte commit_type;
+            public object entity;
+        }
+
+        class EventContentCommitFinalize
+        {
+            public NetCommitId commit_id;
+            public string server_id;
             public byte commit_type;
             public object entity;
         }
