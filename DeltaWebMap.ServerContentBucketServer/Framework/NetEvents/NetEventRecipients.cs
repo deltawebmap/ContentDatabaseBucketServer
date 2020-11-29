@@ -25,7 +25,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
             lock(clients)
             {
                 foreach (var c in clients)
-                    c.QueueSendMessage(opcode.ToString(), new JObject(payload));
+                    c.QueueSendMessage(opcode.ToString(), JObject.FromObject(payload));
             }
         }
 
