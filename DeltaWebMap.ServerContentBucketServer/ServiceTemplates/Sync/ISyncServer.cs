@@ -48,7 +48,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync
             return new WorkingCommitIdentity(server._id, workingCommitId);
         }
 
-        public ActiveWorkingCommit GetCreateWorkingCommit(int workingCommitId, byte commitType)
+        public ActiveWorkingCommit GetCreateWorkingCommit(string bucketName, int workingCommitId, byte commitType)
         {
             return Program.workingCommits.GetOrAdd(GetWorkingCommitIdentity(workingCommitId), (WorkingCommitIdentity _id) =>
             {
@@ -56,7 +56,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync
                 var c = new ActiveWorkingCommit(commitType);
 
                 //Dispatch net events for this
-                Program.netEventManager.GetRecipientsByServer(server._id).SendCommitCreatedEvent(server._id, c.id, c.commitType);
+                Program.netEventManager.GetRecipientsByServer(server._id).SendCommitCreatedEvent(server._id, bucketName, c.id, c.commitType);
 
                 return c;
             });

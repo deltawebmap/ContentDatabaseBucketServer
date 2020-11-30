@@ -126,5 +126,10 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
             }
             return values;
         }
+
+        public override string GetBucketName()
+        {
+            return "dinos";
+        }
     }
 }

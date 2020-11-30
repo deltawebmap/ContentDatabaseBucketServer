@@ -33,9 +33,10 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework
             commit.CommitObject(o);
         }
 
-        public Task Finalize(MultithreadedContentDatabaseSession s)
+        public async Task Finalize(MultithreadedContentDatabaseSession s)
         {
-            return s.WriteCommitAsync(commit);
+            await s.WriteCommitAsync(commit);
+            await s.PruneOldCommitsAsync(id, commitType);
         }
     }
 }

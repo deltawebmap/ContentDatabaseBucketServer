@@ -20,7 +20,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.Put
             RequestData payload = await DecodePOSTBody<RequestData>();
 
             //Get the working commit. This sits in memory until we finsh
-            var workingCommit = GetCreateWorkingCommit(payload.working_commit_id, payload.commit_type);
+            var workingCommit = GetCreateWorkingCommit(GetBucketName(), payload.working_commit_id, payload.commit_type);
 
             //Convert each type
             foreach (var o in payload.items)
@@ -40,7 +40,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.Put
 
                     //Send
                     if (tribeRecipients.HasRecipients())
-                        tribeRecipients.SendCommitPutEvent(server._id, workingCommit.id, workingCommit.commitType, GetRpcNetType(o));
+                        tribeRecipients.SendCommitPutEvent(server._id, GetBucketName(), workingCommit.id, workingCommit.commitType, GetRpcNetType(o));
                 }
             }
 
@@ -51,6 +51,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.Put
         public abstract WriteCommitObject ConvertToCommitObject(T item);
         public abstract int GetTeamId(T item);
         public abstract object GetRpcNetType(T item);
+        public abstract string GetBucketName();
 
         class RequestData
         {

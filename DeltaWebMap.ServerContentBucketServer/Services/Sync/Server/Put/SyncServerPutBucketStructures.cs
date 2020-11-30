@@ -61,5 +61,10 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
         {
             return item.tribe;
         }
+
+        public override string GetBucketName()
+        {
+            return "structures";
+        }
     }
 }

@@ -76,57 +76,59 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
             return clients.Count > 0;
         }
 
-        public void SendCommitPutEvent(ObjectId serverId, ulong commitId, byte commitType, object entity)
+        public void SendCommitPutEvent(ObjectId serverId, string bucketName, ulong commitId, byte commitType, object entity)
         {
             DispatchEventToAll(NetEventOpcode.COMMIT_PUT_CONTENT, new EventContentCommitPutContent
             {
                 commit_id = GetNetCommitId(commitId),
                 commit_type = commitType,
                 entity = entity,
-                server_id = serverId.ToString()
+                server_id = serverId.ToString(),
+                bucket_name = bucketName
             });
         }
 
-        public void SendCommitFinalizedEvent(ObjectId serverId, ulong commitId, byte commitType)
+        public void SendCommitFinalizedEvent(ObjectId serverId, string bucketName, ulong commitId, byte commitType)
         {
             DispatchEventToAll(NetEventOpcode.COMMIT_FINALIZE, new EventContentCommitFinalize
             {
                 commit_id = GetNetCommitId(commitId),
                 commit_type = commitType,
-                server_id = serverId.ToString()
+                server_id = serverId.ToString(),
+                bucket_name = bucketName
             });
         }
 
-        public void SendCommitCreatedEvent(ObjectId serverId, ulong commitId, byte commitType)
+        public void SendCommitCreatedEvent(ObjectId serverId, string bucketName, ulong commitId, byte commitType)
         {
             DispatchEventToAll(NetEventOpcode.COMMIT_CREATE, new EventContentCommitCreate
             {
                 commit_id = GetNetCommitId(commitId),
                 commit_type = commitType,
-                server_id = serverId.ToString()
+                server_id = serverId.ToString(),
+                bucket_name = bucketName
             });
         }
 
-        class EventContentCommitPutContent
+        class EventContentCommitBase
         {
             public NetCommitId commit_id;
+            public string bucket_name;
             public string server_id;
             public byte commit_type;
+        }
+
+        class EventContentCommitPutContent : EventContentCommitBase
+        {
             public object entity;
         }
 
-        class EventContentCommitFinalize
+        class EventContentCommitFinalize : EventContentCommitBase
         {
-            public NetCommitId commit_id;
-            public string server_id;
-            public byte commit_type;
         }
 
-        class EventContentCommitCreate
+        class EventContentCommitCreate : EventContentCommitBase
         {
-            public NetCommitId commit_id;
-            public string server_id;
-            public byte commit_type;
         }
 
         class NetCommitId
@@ -134,13 +136,6 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
             public string id_string;
             public uint id_1;
             public uint id_2;
-        }
-
-        class OutgoingMessage
-        {
-            public string opcode;
-            public string target_server_id;
-            public object payload;
         }
     }
 }

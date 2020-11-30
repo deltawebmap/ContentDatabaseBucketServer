@@ -29,13 +29,13 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.FinalizeCo
             //Open the requested bucket
             var bucket = RequestBucket(GetBucketName());
 
-            //Push
+            //Push and prune
             await workingCommit.Finalize(bucket);
 
             //Dispatch net events
             var serverRecipients = Program.netEventManager.GetRecipientsByServer(server._id);
             if (serverRecipients.HasRecipients())
-                serverRecipients.SendCommitFinalizedEvent(server._id, workingCommit.id, workingCommit.commitType);
+                serverRecipients.SendCommitFinalizedEvent(server._id, GetBucketName(), workingCommit.id, workingCommit.commitType);
 
             //Success
             await WriteString("OK", "text/plain", 200);
