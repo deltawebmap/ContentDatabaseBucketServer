@@ -14,12 +14,19 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.BucketReadFormat
 
         public string id => "dwf_v1";
 
+        public BucketFormatDWF(Type t)
+        {
+            this.t = t;
+        }
+
+        private Type t;
+
         public async Task Encode(Stream output, object[] data)
         {
             using (MemoryStream ms = new MemoryStream())
             {
                 //Encode
-                DeltaWebFormatEncoder encoder = new DeltaWebFormatEncoder(ms, data.GetType().GetElementType());
+                DeltaWebFormatEncoder encoder = new DeltaWebFormatEncoder(ms, t);
                 encoder.Encode(data, new Dictionary<byte, byte[]>());
                 await ms.FlushAsync();
 

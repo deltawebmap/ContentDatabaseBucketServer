@@ -21,7 +21,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.User.Fetch
         {
             formats = new Dictionary<string, IBucketReadFormat>();
             AddFormat(new BucketFormatJson());
-            AddFormat(new BucketFormatDWF());
+            AddFormat(new BucketFormatDWF(typeof(T)));
         }
 
         public string format;
