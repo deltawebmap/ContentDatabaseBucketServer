@@ -21,10 +21,12 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.BucketReadFormat
                 //Encode
                 DeltaWebFormatEncoder encoder = new DeltaWebFormatEncoder(ms, data.GetType().GetElementType());
                 encoder.Encode(data, new Dictionary<byte, byte[]>());
+                await ms.FlushAsync();
 
                 //Rewind and copy
                 ms.Position = 0;
                 await ms.CopyToAsync(output);
+                await output.FlushAsync();
             }
         }
     }
