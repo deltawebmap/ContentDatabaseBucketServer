@@ -71,8 +71,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
                     item_id = ((long)ConversionTools.GetMultipartID(s.i1, s.i2)).ToString(),
                     durability = s.d,
                     stack_size = s.q,
-                    flags = (ushort)GetFlags(s),
-                    custom_data = new Dictionary<string, string>()
+                    flags = (ushort)GetFlags(s)
                 };
             }
             return inventory;

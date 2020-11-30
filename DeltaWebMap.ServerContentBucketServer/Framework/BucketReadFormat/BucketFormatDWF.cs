@@ -19,7 +19,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.BucketReadFormat
             using (MemoryStream ms = new MemoryStream())
             {
                 //Encode
-                DeltaWebFormatEncoder encoder = new DeltaWebFormatEncoder(ms, typeof(T));
+                DeltaWebFormatEncoder encoder = new DeltaWebFormatEncoder(ms, data.GetType().GetElementType());
                 encoder.Encode(data, new Dictionary<byte, byte[]>());
 
                 //Rewind and copy

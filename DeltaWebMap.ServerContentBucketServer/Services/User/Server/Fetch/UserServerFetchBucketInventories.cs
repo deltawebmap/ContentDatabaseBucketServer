@@ -56,8 +56,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
                 item_id = ((ulong)((long)o["item_id"])).ToString(),
                 durability = (float)o["durability"],
                 flags = (ushort)(short)o["flags"],
-                stack_size = (int)o["stack_size"],
-                custom_data = new Dictionary<string, string>()
+                stack_size = (int)o["stack_size"]
             };
         }
 
