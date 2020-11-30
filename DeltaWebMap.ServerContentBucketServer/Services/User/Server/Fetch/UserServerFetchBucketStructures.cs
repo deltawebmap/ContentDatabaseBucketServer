@@ -86,7 +86,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
             }
 
             //Write entries count
-            BitConverter.GetBytes((ushort)data.Length).CopyTo(buffer, 2);
+            BitConverter.GetBytes((ushort)data.Length).CopyTo(buffer, 0);
             output.Write(buffer, 0, 2);
 
             //Write entries
