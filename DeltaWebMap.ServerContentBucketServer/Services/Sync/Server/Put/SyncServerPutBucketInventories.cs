@@ -54,13 +54,15 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
             return obj;
         }
 
-        public override object GetRpcNetType(InventorySyncPayload item)
+        public override object GetRpcNetType(InventorySyncPayload item, ulong commitId, byte commitType)
         {
             NetInventory inventory = new NetInventory
             {
                 holder_id = ConversionTools.GetMultipartID(item.id1, item.id2).ToString(),
                 tribe_id = item.tribe,
-                items = new NetInventory.NetInventory_Item[item.items.Length]
+                items = new NetInventory.NetInventory_Item[item.items.Length],
+                commit_id = commitId.ToString(),
+                commit_type = commitType
             };
             for(int i = 0; i<item.items.Length; i++)
             {

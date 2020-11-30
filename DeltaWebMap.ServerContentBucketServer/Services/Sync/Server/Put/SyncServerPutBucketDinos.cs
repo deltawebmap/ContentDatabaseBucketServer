@@ -70,7 +70,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
             return item.tribe_id;
         }
 
-        public override object GetRpcNetType(DinoSyncPayload item)
+        public override object GetRpcNetType(DinoSyncPayload item, ulong commitId, byte commitType)
         {
             return new NetDino
             {
@@ -99,7 +99,9 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
                 is_cryo = false,
                 experience_points = item.experience,
                 last_sync_time = DateTime.UtcNow,
-                is_alive = true
+                is_alive = true,
+                commit_id = commitId.ToString(),
+                commit_type = commitType
             };
         }
 

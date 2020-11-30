@@ -40,7 +40,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.Put
 
                     //Send
                     if (tribeRecipients.HasRecipients())
-                        tribeRecipients.SendCommitPutEvent(server._id, GetBucketName(), workingCommit.id, workingCommit.commitType, GetRpcNetType(o));
+                        tribeRecipients.SendCommitPutEvent(server._id, GetBucketName(), workingCommit.id, workingCommit.commitType, GetRpcNetType(o, workingCommit.id, workingCommit.commitType));
                 }
             }
 
@@ -50,7 +50,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.Sync.Put
 
         public abstract WriteCommitObject ConvertToCommitObject(T item);
         public abstract int GetTeamId(T item);
-        public abstract object GetRpcNetType(T item);
+        public abstract object GetRpcNetType(T item, ulong commitId, byte commitType);
         public abstract string GetBucketName();
 
         class RequestData

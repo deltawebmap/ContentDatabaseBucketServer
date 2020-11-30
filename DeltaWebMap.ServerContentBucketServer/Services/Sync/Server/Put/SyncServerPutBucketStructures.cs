@@ -45,7 +45,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
             return obj;
         }
 
-        public override object GetRpcNetType(StructureSyncPayload item)
+        public override object GetRpcNetType(StructureSyncPayload item, ulong commitId, byte commitType)
         {
             return new NetStructure
             {
@@ -53,7 +53,9 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.Sync.Server.Put
                 has_inventory = true,
                 location = item.location,
                 structure_id = item.id,
-                tribe_id = item.tribe
+                tribe_id = item.tribe,
+                commit_id = commitId.ToString(),
+                commit_type = commitType
             };
         }
 
