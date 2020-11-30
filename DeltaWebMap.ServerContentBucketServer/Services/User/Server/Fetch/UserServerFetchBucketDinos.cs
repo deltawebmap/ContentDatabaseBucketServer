@@ -59,7 +59,9 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
                 taming_effectiveness = (float)o["taming_effectiveness"],
                 is_cryo = (bool)o["is_cryo"],
                 last_sync_time = new DateTime((long)o["last_sync_time"]),
-                is_alive = true
+                is_alive = true,
+                commit_id = commit_id.ToString(),
+                commit_type = commit_type
             };
             return d;
         }

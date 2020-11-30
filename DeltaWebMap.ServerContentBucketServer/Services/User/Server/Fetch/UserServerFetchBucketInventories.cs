@@ -38,7 +38,9 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
             {
                 holder_id = object_id.ToString(),
                 items = new NetInventory.NetInventory_Item[oItems.Length],
-                tribe_id = group_id
+                tribe_id = group_id,
+                commit_id = commit_id.ToString(),
+                commit_type = commit_type
             };
 
             //Populate
@@ -56,7 +58,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
                 item_id = ((ulong)((long)o["item_id"])).ToString(),
                 durability = (float)o["durability"],
                 flags = (ushort)(short)o["flags"],
-                stack_size = (int)o["stack_size"]
+                stack_size = (int)o["stack_size"],
             };
         }
 

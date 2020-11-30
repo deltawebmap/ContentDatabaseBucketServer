@@ -41,7 +41,9 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
                 has_inventory = (bool)o["has_inventory"],
                 location = ConversionTools.ConvertObjectToLocation((DatabaseObject)o["location"]),
                 structure_id = (int)object_id,
-                tribe_id = group_id
+                tribe_id = group_id,
+                commit_id = commit_id.ToString(),
+                commit_type = commit_type
             };
         }
 
@@ -68,8 +70,17 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
                     nameTable.Add(name);
             }
 
+            //Create the commit table
+            List<string> commitIdTable = new List<string>();
+            foreach (var d in data)
+            {
+                string name = ((NetStructure)d).commit_id;
+                if (!commitIdTable.Contains(name))
+                    commitIdTable.Add(name);
+            }
+
             //Open buffer
-            byte[] buffer = new byte[24];
+            byte[] buffer = new byte[26];
 
             //Create header
             BitConverter.GetBytes((int)1397577540).CopyTo(buffer, 0);
@@ -79,6 +90,18 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
 
             //Write name table
             foreach(var n in nameTable)
+            {
+                byte[] b = Encoding.ASCII.GetBytes(n);
+                output.Write(b, 0, b.Length);
+                output.WriteByte(0x00);
+            }
+
+            //Write commit table count
+            BitConverter.GetBytes((ushort)commitIdTable.Count).CopyTo(buffer, 0);
+            output.Write(buffer, 0, 2);
+
+            //Write commit table
+            foreach (var n in commitIdTable)
             {
                 byte[] b = Encoding.ASCII.GetBytes(n);
                 output.Write(b, 0, b.Length);
@@ -99,12 +122,14 @@ namespace DeltaWebMap.ServerContentBucketServer.Services.User.Server.Fetch
                 BitConverter.GetBytes((ushort)nameTable.IndexOf(s.classname)).CopyTo(buffer, 0);
                 buffer[2] = flags;
                 buffer[3] = (byte)(s.location.yaw * 0.708333333f);
-                BitConverter.GetBytes((int)s.structure_id).CopyTo(buffer, 4);
-                BitConverter.GetBytes((int)s.tribe_id).CopyTo(buffer, 8);
-                BitConverter.GetBytes((float)s.location.x).CopyTo(buffer, 12);
-                BitConverter.GetBytes((float)s.location.y).CopyTo(buffer, 16);
-                BitConverter.GetBytes((float)s.location.z).CopyTo(buffer, 20);
-                output.Write(buffer, 0, 24);
+                buffer[4] = (byte)commitIdTable.IndexOf(s.commit_id);
+                buffer[5] = (byte)s.commit_type;
+                BitConverter.GetBytes((int)s.structure_id).CopyTo(buffer, 6);
+                BitConverter.GetBytes((int)s.tribe_id).CopyTo(buffer, 10);
+                BitConverter.GetBytes((float)s.location.x).CopyTo(buffer, 14);
+                BitConverter.GetBytes((float)s.location.y).CopyTo(buffer, 18);
+                BitConverter.GetBytes((float)s.location.z).CopyTo(buffer, 22);
+                output.Write(buffer, 0, 26);
             }
         }
     }
