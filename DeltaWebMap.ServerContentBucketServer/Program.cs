@@ -22,7 +22,7 @@ namespace DeltaWebMap.ServerContentBucketServer
         public static ContentUnitConfig unitConfig;
 
         public const int APP_VERISON_MAJOR = 0;
-        public const int APP_VERISON_MINOR = 6;
+        public const int APP_VERISON_MINOR = 7;
 
         static void Main(string[] args)
         {

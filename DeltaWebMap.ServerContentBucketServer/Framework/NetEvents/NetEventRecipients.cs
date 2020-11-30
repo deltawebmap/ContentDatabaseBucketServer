@@ -99,7 +99,7 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
 
         public void SendCommitCreatedEvent(ObjectId serverId, ulong commitId, byte commitType)
         {
-            DispatchEventToAll(NetEventOpcode.COMMIT_CREATE, new EventContentCommitFinalize
+            DispatchEventToAll(NetEventOpcode.COMMIT_CREATE, new EventContentCommitCreate
             {
                 commit_id = GetNetCommitId(commitId),
                 commit_type = commitType,
@@ -120,7 +120,13 @@ namespace DeltaWebMap.ServerContentBucketServer.Framework.NetEvents
             public NetCommitId commit_id;
             public string server_id;
             public byte commit_type;
-            public object entity;
+        }
+
+        class EventContentCommitCreate
+        {
+            public NetCommitId commit_id;
+            public string server_id;
+            public byte commit_type;
         }
 
         class NetCommitId

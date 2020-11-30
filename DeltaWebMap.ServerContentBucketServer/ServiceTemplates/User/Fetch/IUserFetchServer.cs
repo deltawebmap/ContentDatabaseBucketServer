@@ -1,5 +1,7 @@
 ﻿using DeltaWebMap.ContentDatabase;
 using DeltaWebMap.ContentDatabase.CommitBuilders.Find;
+using DeltaWebMap.ServerContentBucketServer.Framework;
+using DeltaWebMap.ServerContentBucketServer.Framework.BucketReadFormat;
 using LibDeltaSystem;
 using LibDeltaSystem.Tools.DeltaWebFormat;
 using LibDeltaSystem.WebFramework;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,12 +19,21 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.User.Fetch
     {
         public IUserFetchServer(DeltaConnection conn, HttpContext e) : base(conn, e)
         {
+            formats = new Dictionary<string, IBucketReadFormat>();
+            AddFormat(new BucketFormatJson());
+            AddFormat(new BucketFormatDWF());
         }
 
         public string format;
         public int limit;
         public int skip;
         public MultithreadedContentDatabaseSession bucket;
+        private Dictionary<string, IBucketReadFormat> formats;
+
+        public void AddFormat(IBucketReadFormat fmt)
+        {
+            formats.Add(fmt.id, fmt);
+        }
 
         public override async Task HandleUserBucket()
         {
@@ -31,10 +43,13 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.User.Fetch
 
             //Get format parameter
             if (!e.Request.Query.ContainsKey("format"))
-                throw new DeltaWebException("No format specified. Please set the \"format\" query parameter to one of \"json\" or \"dwf_v1\".", 400);
+                throw new DeltaWebException("No format specified.", 400);
             format = e.Request.Query["format"];
-            if(format != "json" && format != "dwf_v1")
-                throw new DeltaWebException("Format invalid. Please set the \"format\" query parameter to one of \"json\" or \"dwf_v1\".", 400);
+            if(!formats.ContainsKey(format))
+                throw new DeltaWebException("Format invalid.", 400);
+
+            //Get the compression
+            CompressionType compression = GetEnumStringFromQuery("compression", CompressionType.NONE);
 
             //Open the requested bucket
             bucket = RequestBucket(GetBucketName());
@@ -60,27 +75,15 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.User.Fetch
             }
 
             //We'll now send the results based on the format requested
-            if(format == "json")
+            if(compression == CompressionType.NONE)
             {
-                await WriteJSON(new ResponseJsonData
-                {
-                    data = items
-                });
-            } else if (format == "dwf_v1")
-            {
-                using(MemoryStream ms = new MemoryStream())
-                {
-                    //Encode
-                    DeltaWebFormatEncoder encoder = new DeltaWebFormatEncoder(ms, typeof(T));
-                    encoder.Encode(items, new Dictionary<byte, byte[]>());
-
-                    //Rewind and copy
-                    ms.Position = 0;
-                    await ms.CopyToAsync(e.Response.Body);
-                }
+                //Normal
+                await formats[format].Encode(e.Response.Body, items);
             } else
             {
-                throw new Exception("Unknown format, but permitted by entry to the function.");
+                //Compressed
+                using(GZipStream gz = new GZipStream(e.Response.Body, CompressionLevel.Fastest, true))
+                    await formats[format].Encode(gz, items);
             }
         }
 
@@ -91,6 +94,12 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.User.Fetch
         class ResponseJsonData
         {
             public object[] data;
+        }
+
+        enum CompressionType
+        {
+            NONE,
+            GZIP
         }
     }
 }
