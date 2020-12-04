@@ -38,7 +38,7 @@ namespace DeltaWebMap.ServerContentBucketServer.ServiceTemplates.User.Fetch
         public override async Task HandleUserBucket()
         {
             //Read parameters
-            limit = GetIntFromQuery("limit", 100, 0, 1000);
+            limit = GetIntFromQuery("limit", 100, 0, 4000);
             skip = GetIntFromQuery("skip", 0, 0, int.MaxValue);
 
             //Get format parameter
